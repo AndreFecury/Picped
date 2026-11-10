@@ -1,0 +1,19 @@
+# Mantém a imagem pequena e evita vazar segredos/arquivos locais
+.git
+.gitignore
+.vscode
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.env
+*.zip
+docs
+scripts
+Atv2610
+tests
+Dockerfile
+docker-compose.yml
+.dockerignore
