@@ -11,9 +11,7 @@ __pycache__
 .env
 *.zip
 docs
-scripts
 Atv2610
-tests
 Dockerfile
 docker-compose.yml
 .dockerignore

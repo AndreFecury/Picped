@@ -1,7 +1,8 @@
 # =====================================================================
 # Picped API - Dockerfile multi-stage
 #   Estágio 1 (builder): instala as dependências num virtualenv
-#   Estágio 2 (runtime): imagem enxuta, só com o venv + código, rodando como usuário não-root
+#   Estágio 2 (test):    builder + dependências de teste + tests/ (usado só no compose --profile test)
+#   Estágio 3 (runtime): imagem enxuta, só com o venv + código, rodando como usuário não-root
 # =====================================================================
 
 # ---------- Estágio 1: build ----------
@@ -19,7 +20,22 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 
-# ---------- Estágio 2: runtime ----------
+# ---------- Estágio 2: testes (não vai para a imagem final) ----------
+FROM builder AS test
+
+COPY requirements-dev.txt .
+RUN pip install -r requirements-dev.txt
+
+WORKDIR /app
+COPY pyproject.toml ./
+COPY app ./app
+COPY scripts ./scripts
+COPY tests ./tests
+
+CMD ["pytest", "-v"]
+
+
+# ---------- Estágio 3: runtime ----------
 FROM python:3.12-slim AS runtime
 
 LABEL org.opencontainers.image.title="picped-api" \

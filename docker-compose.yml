@@ -4,6 +4,7 @@
 #   docker compose ps                 -> status/healthcheck
 #   docker compose down               -> para (dados ficam no volume)
 #   docker compose down -v            -> para e APAGA o banco (recria com schema+seed)
+#   docker compose --profile test run --rm tests  -> roda os testes (banco picped_test)
 # =====================================================================
 name: picped
 
@@ -36,6 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
     image: picped-api:latest
     container_name: picped-api
     restart: unless-stopped
@@ -60,6 +62,25 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+  tests:
+    profiles: ["test"]               # só sobe com --profile test
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: picped-api:test
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      TEST_DB_NAME: picped_test      # banco separado: os testes recriam as tabelas a cada teste
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
 
 networks:
   backend:
