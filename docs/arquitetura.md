@@ -1,4 +1,4 @@
-# Picped — Arquitetura do Backend (Etapa 2)
+# Picped — Arquitetura do Backend (Etapas 2 a 4)
 
 Stack: **Python 3.12 · FastAPI · SQLAlchemy (pool de conexões) · psycopg 3 · PostgreSQL 16**
 
@@ -27,6 +27,8 @@ Fluxo de uma requisição: `Router → Service → Repository → PostgreSQL`. A
 
 ## Regras de negócio (Services)
 
+- **Usuário:** e-mail normalizado em minúsculas e único; a senha é guardada só como hash PBKDF2-SHA256
+  com salt (nunca aparece nas respostas).
 - **Produto:** a categoria informada precisa existir; nomes são normalizados (sem espaços extras).
 - **Preço:** produto, supermercado e usuário precisam existir; supermercado inativo não aceita preços;
   o registro é rejeitado se `distancia_metros` for maior que o `raio_metros` do supermercado
@@ -59,6 +61,8 @@ Repository (nunca da requisição).
 
 | Situação | HTTP | Código |
 |---|---|---|
+| JSON mal formado | 400 | `json_invalido` |
+| PATCH sem nenhum campo | 400 | `requisicao_invalida` |
 | Registro não encontrado | 404 | `nao_encontrado` |
 | Regra de negócio violada | 422 | `regra_de_negocio` |
 | Dados de entrada inválidos (Pydantic) | 422 | `validacao` |
@@ -116,3 +120,52 @@ docker compose ps                 # db e api devem aparecer como "healthy"
 - Acessar o banco: `docker compose exec db psql -U postgres -d picped`
 - Conferir usuário não-root: `docker compose exec api whoami` → `picped`
 - Logs: `docker compose logs -f api`
+
+## Endpoints e Swagger — Etapa 4
+
+Documentação interativa gerada pelo FastAPI (OpenAPI 3.1):
+
+- **Swagger UI:** http://localhost:8000/docs (a raiz `/` redireciona para cá)
+- **ReDoc:** http://localhost:8000/redoc
+- **OpenAPI JSON:** http://localhost:8000/openapi.json
+
+### Rotas (CRUD completo)
+
+| Recurso | GET (lista) | GET `/{id}` | POST | PATCH `/{id}` | DELETE `/{id}` | Extras |
+|---|---|---|---|---|---|---|
+| `/categorias` | ✔ | ✔ | ✔ | ✔ | ✔ | — |
+| `/produtos` | ✔ | ✔ | ✔ | ✔ | ✔ | `GET /produtos/{id}/comparacao` |
+| `/supermercados` | ✔ | ✔ | ✔ | ✔ | ✔ | `GET /supermercados/proximos?latitude=&longitude=` |
+| `/precos` | ✔ (filtros `produto_id`, `supermercado_id`) | ✔ | ✔ | ✔ | ✔ | — |
+| `/usuarios` | ✔ | ✔ | ✔ | ✔ | ✔ | — |
+| `/health` | ✔ | | | | | verifica API + banco |
+
+Listagens aceitam paginação: `?limit=` (1–200, padrão 50) e `?offset=` (≥ 0).
+
+### Status HTTP
+
+| Status | Quando acontece | Exemplo |
+|---|---|---|
+| **200** OK | GET e PATCH bem-sucedidos | `GET /produtos/1` |
+| **201** Created | POST criou o registro (retorna o registro criado) | `POST /categorias` |
+| **204** No Content | DELETE bem-sucedido (sem corpo) | `DELETE /precos/5` |
+| **400** Bad Request | JSON mal formado ou PATCH com corpo `{}` | `PATCH /produtos/1` com `{}` |
+| **404** Not Found | ID inexistente ou rota inexistente | `GET /produtos/9999` |
+| **409** Conflict | UNIQUE duplicado ou registro em uso (FK) | e-mail já cadastrado |
+| **422** Unprocessable Entity | Schema inválido (tipo, tamanho, campo extra, null em obrigatório, ID ≤ 0) **ou** regra de negócio | `POST /precos` fora do raio do mercado |
+
+Cada rota declara no Swagger os status de erro que pode devolver, com o schema `ErroOut` e um exemplo.
+
+### Validação estrita (Pydantic v2)
+
+Todos os schemas de entrada herdam de `CreateSchema` / `UpdateSchema` (`app/schemas/base.py`):
+
+- `extra="forbid"`: campo desconhecido → 422;
+- `strict=True`: sem conversão silenciosa de tipos (`"5"` não vira `5`, `"true"` não vira `true`);
+  só `valor` (Decimal) e `coletado_em` (datetime) aceitam texto, porque JSON não tem esses tipos;
+- `str_strip_whitespace=True` + `min_length`/`max_length`, `pattern` (código de barras, e-mail),
+  `gt`/`ge`/`le` (IDs, coordenadas, raio, preço com no máximo 2 casas decimais), `Literal` (unidade de medida);
+- no PATCH, campos obrigatórios podem ser omitidos, mas não enviados como `null`.
+
+Todo schema de entrada e saída tem **exemplo de payload** (`json_schema_extra.examples`), que aparece
+preenchido no botão *Try it out* do Swagger.
