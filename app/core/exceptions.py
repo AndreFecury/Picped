@@ -19,6 +19,11 @@ class AppError(Exception):
         self.mensagem = mensagem
 
 
+class BadRequestError(AppError):
+    status_code = 400
+    codigo = "requisicao_invalida"
+
+
 class NotFoundError(AppError):
     status_code = 404
     codigo = "nao_encontrado"
@@ -61,11 +66,12 @@ def registrar_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validacao(_: Request, exc: RequestValidationError):
+        erros = exc.errors()
+        # JSON que nem chega a ser lido é requisição mal formada (400), não dado inválido (422)
+        if any(e["type"] == "json_invalid" for e in erros):
+            return _resposta(400, "json_invalido", "O corpo da requisição não é um JSON válido.")
         detalhes = []
-        for e in exc.errors():
-            if e["type"] == "json_invalid":
-                detalhes.append({"campo": "body", "mensagem": "JSON mal formatado."})
-                continue
+        for e in erros:
             campo = ".".join(str(p) for p in e["loc"][1:]) or str(e["loc"][0])
             mensagem = e["msg"].removeprefix("Value error, ")
             detalhes.append({"campo": campo, "mensagem": mensagem})

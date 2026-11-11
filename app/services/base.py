@@ -4,7 +4,7 @@ recebe dados já validados, aplica as regras e usa os repositories.
 """
 from typing import Any
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 
 
 def normalizar_texto(valor: str) -> str:
@@ -30,8 +30,15 @@ class BaseService:
     def criar(self, dados: dict[str, Any]):
         return self.repo.criar(dados)
 
+    @staticmethod
+    def exigir_campos(dados: dict[str, Any]) -> None:
+        """PATCH sem nenhum campo não tem o que atualizar: requisição inválida (400)."""
+        if not dados:
+            raise BadRequestError("Informe ao menos um campo para atualizar.")
+
     def atualizar(self, id_: int, dados: dict[str, Any]):
         self.obter(id_)  # 404 se não existir
+        self.exigir_campos(dados)
         return self.repo.atualizar(id_, dados)
 
     def deletar(self, id_: int) -> None:

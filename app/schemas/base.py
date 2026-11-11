@@ -1,16 +1,32 @@
-"""Base dos schemas de atualização parcial (PATCH)."""
+"""
+Bases dos schemas Pydantic de entrada.
+
+Validação estrita:
+- extra="forbid": campos desconhecidos são rejeitados (422);
+- strict=True: sem conversão silenciosa de tipos ("5" não vira 5, "true" não vira True);
+- str_strip_whitespace: espaços nas pontas são removidos antes de validar o tamanho.
+"""
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+CONFIG_ENTRADA = ConfigDict(extra="forbid", strict=True, str_strip_whitespace=True)
+
+
+class CreateSchema(BaseModel):
+    """Base dos payloads de criação (POST)."""
+
+    model_config = CONFIG_ENTRADA
+
 
 class UpdateSchema(BaseModel):
     """
-    No PATCH o campo pode ser omitido, mas campos obrigatórios não podem ser
-    enviados como null. Validação feita aqui (entrada), e não deixada para o banco.
+    Base dos payloads de atualização parcial (PATCH).
+    O campo pode ser omitido, mas campos obrigatórios não podem ser enviados como null.
+    Validação feita aqui (entrada), e não deixada para o banco.
     """
 
-    model_config = ConfigDict(extra="forbid")  # rejeita campos desconhecidos
+    model_config = CONFIG_ENTRADA
     nao_nulos: ClassVar[tuple[str, ...]] = ()
 
     @model_validator(mode="after")

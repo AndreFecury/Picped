@@ -25,5 +25,6 @@ class ProdutoService(BaseService):
 
     def atualizar(self, id_, dados):
         self.obter(id_)
+        self.exigir_campos(dados)
         self._validar(dados)
         return self.repo.atualizar(id_, dados)
