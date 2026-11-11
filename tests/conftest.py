@@ -9,10 +9,15 @@ from pathlib import Path
 
 import psycopg
 import pytest
+from dotenv import load_dotenv
 from psycopg import sql
 
+load_dotenv()
+_BANCO_TESTE = os.getenv("TEST_DB_NAME", "picped_test")
+if _BANCO_TESTE == os.getenv("DB_NAME", "picped"):
+    raise RuntimeError("TEST_DB_NAME não pode ser o banco principal: os testes apagam as tabelas.")
 # precisa vir ANTES de importar a app: o engine é criado na importação
-os.environ["DB_NAME"] = os.getenv("TEST_DB_NAME", "picped_test")
+os.environ["DB_NAME"] = _BANCO_TESTE
 
 from fastapi.testclient import TestClient  # noqa: E402
 
