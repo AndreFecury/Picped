@@ -9,18 +9,20 @@ class SupermercadoService(BaseService):
         super().__init__(repo)
 
     @staticmethod
-    def _normalizar(dados: dict) -> None:
+    def _normalizar(dados: dict) -> dict:
         for campo in ("nome", "cidade", "bairro", "endereco"):
             if dados.get(campo):
                 dados[campo] = normalizar_texto(dados[campo])
+        return dados
 
     def criar(self, dados):
-        self._normalizar(dados)
-        return super().criar(dados)
+        return super().criar(self._normalizar(dados))
+
+    def substituir(self, id_, dados):
+        return super().substituir(id_, self._normalizar(dados))
 
     def atualizar(self, id_, dados):
-        self._normalizar(dados)
-        return super().atualizar(id_, dados)
+        return super().atualizar(id_, self._normalizar(dados))
 
     def proximos(self, latitude: float, longitude: float) -> list[dict]:
         """Supermercados cujo raio contém a posição do usuário (do mais perto ao mais longe)."""

@@ -1,4 +1,4 @@
-# Picped — Arquitetura do Backend (Etapa 2)
+# Picped — Arquitetura do Backend
 
 Stack: **Python 3.12 · FastAPI · SQLAlchemy (pool de conexões) · psycopg 3 · PostgreSQL 16**
 
@@ -59,10 +59,12 @@ Repository (nunca da requisição).
 
 | Situação | HTTP | Código |
 |---|---|---|
+| JSON mal formatado / PATCH vazio | 400 | `requisicao_invalida` |
 | Registro não encontrado | 404 | `nao_encontrado` |
 | Regra de negócio violada | 422 | `regra_de_negocio` |
 | Dados de entrada inválidos (Pydantic) | 422 | `validacao` |
 | Duplicidade (UNIQUE) | 409 | `registro_duplicado` |
+| E-mail já cadastrado (regra do Service) | 409 | `conflito` |
 | Chave estrangeira (FK) | 409 | `violacao_de_relacionamento` |
 | Banco indisponível | 503 | `banco_indisponivel` |
 | Rota inexistente | 404 | `nao_encontrado` |
@@ -80,6 +82,49 @@ uvicorn app.main:app --reload
 ```
 
 Swagger: http://localhost:8000/docs
+
+## Endpoints & Swagger — Etapa 4
+
+Swagger UI em **`/docs`** (ReDoc em `/redoc`, especificação em `/openapi.json`). Cada schema de entrada
+tem exemplo de payload, e cada rota documenta as respostas de erro possíveis com o schema `ErroOut`.
+
+| Recurso | Listar | Criar | Obter | Substituir | Atualizar parte | Excluir |
+|---|---|---|---|---|---|---|
+| Categorias | `GET /categorias` | `POST /categorias` | `GET /categorias/{id}` | `PUT /categorias/{id}` | `PATCH /categorias/{id}` | `DELETE /categorias/{id}` |
+| Produtos | `GET /produtos` | `POST /produtos` | `GET /produtos/{id}` | `PUT /produtos/{id}` | `PATCH /produtos/{id}` | `DELETE /produtos/{id}` |
+| Supermercados | `GET /supermercados` | `POST /supermercados` | `GET /supermercados/{id}` | `PUT /supermercados/{id}` | `PATCH /supermercados/{id}` | `DELETE /supermercados/{id}` |
+| Usuários | `GET /usuarios` | `POST /usuarios` | `GET /usuarios/{id}` | `PUT /usuarios/{id}` | `PATCH /usuarios/{id}` | `DELETE /usuarios/{id}` |
+| Preços | `GET /precos` | `POST /precos` | `GET /precos/{id}` | `PUT /precos/{id}` | `PATCH /precos/{id}` (só `valor`) | `DELETE /precos/{id}` |
+
+Rotas extras: `GET /produtos/{id}/comparacao`, `GET /supermercados/proximos?latitude=&longitude=`,
+`GET /precos?produto_id=&supermercado_id=` e `GET /health`. Listagens aceitam `limit` (1–200) e `offset`.
+
+### Status HTTP
+
+| Status | Quando |
+|---|---|
+| 200 | GET, PUT e PATCH com sucesso |
+| 201 | POST com sucesso (retorna o registro criado) |
+| 204 | DELETE com sucesso (corpo vazio) |
+| 400 | JSON mal formatado ou PATCH sem nenhum campo |
+| 404 | Registro ou rota inexistente |
+| 409 | Duplicidade (UNIQUE, e-mail já cadastrado) ou exclusão de registro em uso (FK) |
+| 422 | Dados inválidos (Pydantic) ou regra de negócio violada |
+
+### Validação estrita (schemas Pydantic)
+
+- `extra="forbid"`: campo desconhecido no JSON → 422 (ex.: `senha_hash` não pode ser enviado).
+- IDs, `raio_metros` e `distancia_metros` em modo `strict` (`"7"` não vira `7`); `ativo` só aceita `true/false`.
+- Tamanhos, faixas (`latitude` −90..90, `valor` > 0 com 2 casas), `unidade_medida` restrita a `un/kg/g/l/ml`,
+  EAN com 8–14 dígitos, e-mail com formato válido, senha com no mínimo 8 caracteres.
+- PATCH: campos podem ser omitidos, mas campos obrigatórios não podem ser enviados como `null`.
+- IDs na URL precisam ser > 0 (`GET /produtos/0` → 422 sem consultar o banco).
+
+### Usuários
+
+A senha chega em texto pelo HTTPS e é gravada só como hash **PBKDF2-SHA256** com salt aleatório
+(`pbkdf2_sha256$iterações$salt$hash`). Nenhuma resposta devolve a senha ou o hash. O e-mail é salvo em
+minúsculas e é único (409 se já existir).
 
 ## Conteinerização (Docker Compose) — Etapa 3
 

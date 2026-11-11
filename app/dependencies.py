@@ -16,6 +16,7 @@ from app.services.health_service import HealthService
 from app.services.preco_service import PrecoService
 from app.services.produto_service import ProdutoService
 from app.services.supermercado_service import SupermercadoService
+from app.services.usuario_service import UsuarioService
 
 
 def get_conn() -> Iterator[Connection]:
@@ -43,6 +44,10 @@ def get_preco_service(conn: Connection = Depends(get_conn)) -> PrecoService:
         SupermercadoRepository(conn),
         UsuarioRepository(conn),
     )
+
+
+def get_usuario_service(conn: Connection = Depends(get_conn)) -> UsuarioService:
+    return UsuarioService(UsuarioRepository(conn))
 
 
 def get_health_service(conn: Connection = Depends(get_conn)) -> HealthService:

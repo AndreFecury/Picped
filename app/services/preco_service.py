@@ -33,7 +33,7 @@ class PrecoService(BaseService):
     ):
         return self.repo.listar(limit, offset, produto_id, supermercado_id)
 
-    def criar(self, dados):
+    def _validar_regras(self, dados: dict) -> None:
         """Regras: referências existem, mercado ativo e usuário dentro do raio do mercado."""
         if not self.produtos.existe(dados["produto_id"]):
             raise BusinessRuleError(f"O produto {dados['produto_id']} não existe.")
@@ -52,7 +52,17 @@ class PrecoService(BaseService):
                 f"Registro rejeitado: o usuário está a {distancia} m do supermercado "
                 f"(máximo permitido: {mercado.raio_metros} m)."
             )
+
+    def criar(self, dados):
+        self._validar_regras(dados)
         return super().criar(dados)
+
+    def substituir(self, id_, dados):
+        self.obter(id_)
+        self._validar_regras(dados)
+        if dados.get("coletado_em") is None:
+            dados.pop("coletado_em", None)  # mantém a data original da coleta
+        return super().substituir(id_, dados)
 
     def comparar(self, produto_id: int) -> dict:
         """Compara o preço atual do produto entre os supermercados e calcula a economia possível."""
