@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,8 +18,10 @@ class ApiException implements Exception {
 
 // ---------------- configuração ----------------
 
-/// Endereço padrão: 10.0.2.2 é o "localhost" do PC visto de dentro do emulador Android.
-const urlPadrao = 'http://10.0.2.2:8000';
+/// Endereço padrão da API:
+/// - versão web (servida pela própria API em /app): o mesmo endereço da página;
+/// - Android: 10.0.2.2 é o "localhost" do PC visto de dentro do emulador.
+String get urlPadrao => kIsWeb ? Uri.base.origin : 'http://10.0.2.2:8000';
 const _chaveUrl = 'api_url';
 const _chaveToken = 'token';
 

@@ -1,13 +1,24 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.database import engine
 from app.core.exceptions import registrar_handlers
-from app.routers import auth, categorias, health, listas, precos, produtos, supermercados, usuarios
+from app.routers import (
+    auth,
+    categorias,
+    health,
+    listas,
+    precos,
+    produtos,
+    supermercados,
+    usuarios,
+)
 
 
 @asynccontextmanager
@@ -81,3 +92,10 @@ app.include_router(supermercados.router)
 app.include_router(precos.router)
 app.include_router(usuarios.router)
 app.include_router(listas.router)
+
+
+# Versão web do app Picped (gerada com `flutter build web --base-href /app/` a partir de mobile/).
+# Permite usar o app no próprio computador que roda a API: http://localhost:8000/app/
+_WEB_APP = Path(__file__).resolve().parent.parent / "web_app"
+if _WEB_APP.is_dir():
+    app.mount("/app", StaticFiles(directory=_WEB_APP, html=True), name="app_web")

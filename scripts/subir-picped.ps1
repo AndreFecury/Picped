@@ -51,7 +51,7 @@ for ($i = 0; $i -lt 40; $i++) {
     Start-Sleep -Seconds 3
 }
 docker compose ps
-if ($ok) { Write-Host "API OK: http://localhost:8000/docs" -ForegroundColor Green }
+if ($ok) { Write-Host "API OK: http://localhost:8000/docs" -ForegroundColor Green; Write-Host "APP no navegador deste PC: http://localhost:8000/app/" -ForegroundColor Green }
 else { Write-Host "A API nao respondeu. Logs:" -ForegroundColor Red; docker compose logs --tail 40 api }
 
 Passo "5/5 Liberando a porta 8000 para o celular (Firewall do Windows)"
@@ -66,7 +66,8 @@ else {
 
 Write-Host ""
 Write-Host "==============================================================" -ForegroundColor Green
-Write-Host " No app Picped > Configurar servidor, use um destes enderecos:" -ForegroundColor Green
+Write-Host " Usar o app neste PC: http://localhost:8000/app/" -ForegroundColor Green
+Write-Host " No celular (app Picped > Configurar servidor), use:" -ForegroundColor Green
 Get-NetIPAddress -AddressFamily IPv4 |
     Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254*' -and $_.InterfaceAlias -notlike 'vEthernet*' } |
     ForEach-Object { Write-Host ("   http://{0}:8000   ({1})" -f $_.IPAddress, $_.InterfaceAlias) }

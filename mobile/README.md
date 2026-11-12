@@ -34,7 +34,18 @@ lib/
 - Token guardado no **flutter_secure_storage** (Keystore do Android). Senha nunca fica no app.
 - **geolocator** (GPS) e **mobile_scanner** (EAN/GTIN). As regras de negócio ficam na API.
 
-## Como rodar a apresentação
+## Usar só no computador (sem celular)
+
+A API também serve a **versão web do app**: com o `docker compose` rodando, abra
+**http://localhost:8000/app/** no navegador do mesmo computador. Ela já aponta para a API local
+(não precisa configurar servidor). Para atualizar essa versão depois de mudar o código do app:
+
+```bash
+flutter build web --release --base-href /app/ --no-web-resources-cdn
+# copiar build/web para ../web_app (sem os arquivos *.symbols e *.map)
+```
+
+## Como rodar a apresentação (celular)
 
 1. **API no notebook:** na raiz do repositório, `docker compose up -d --build`
    (banco novo: `docker compose down -v` antes, para carregar schema + seed + demo).

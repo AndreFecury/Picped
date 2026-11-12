@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,5 +35,14 @@ class PicpedApp extends ConsumerWidget {
         locale: const Locale('pt', 'BR'),
         supportedLocales: const [Locale('pt', 'BR')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        // na versão web aberta no computador, mantém o layout com largura de celular
+        builder: kIsWeb
+            ? (context, child) => ColoredBox(
+                  color: const Color(0xFFE2E8E4),
+                  child: Center(
+                    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: child),
+                  ),
+                )
+            : null,
       );
 }
