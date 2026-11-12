@@ -20,6 +20,9 @@ class Settings:
     pool_timeout: int
     pool_recycle: int
     connect_timeout: int
+    secret_key: str
+    token_horas: int
+    cors_origens: list[str]
 
 
 @lru_cache
@@ -35,4 +38,7 @@ def get_settings() -> Settings:
         pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "30")),
         pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "1800")),
         connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+        secret_key=os.getenv("SECRET_KEY", "picped-dev-troque-esta-chave"),
+        token_horas=int(os.getenv("TOKEN_HORAS", "72")),
+        cors_origens=[o.strip() for o in os.getenv("CORS_ORIGENS", "*").split(",") if o.strip()],
     )

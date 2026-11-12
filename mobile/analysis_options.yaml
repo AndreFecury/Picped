@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+  errors:
+    # package:flutter/material.dart foi marcado como "deprecated" no Flutter 3.47+ em favor do
+    # material_ui; mantemos o import clássico porque os pacotes (go_router etc.) ainda o usam.
+    deprecated_member_use: ignore
+    deprecated_member_use_from_same_package: ignore

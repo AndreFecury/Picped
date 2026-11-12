@@ -1,4 +1,4 @@
-# Picped — Arquitetura do Backend (Etapas 2 a 4)
+# Picped — Arquitetura do Backend (Etapas 2 a 4 + suporte ao app)
 
 Stack: **Python 3.12 · FastAPI · SQLAlchemy (pool de conexões) · psycopg 3 · PostgreSQL 16**
 
@@ -169,3 +169,24 @@ Todos os schemas de entrada herdam de `CreateSchema` / `UpdateSchema` (`app/sche
 
 Todo schema de entrada e saída tem **exemplo de payload** (`json_schema_extra.examples`), que aparece
 preenchido no botão *Try it out* do Swagger.
+
+## Suporte ao aplicativo Android (APS) — branch `feat/app`
+
+Rotas adicionadas para o app (`mobile/`), sem alterar as rotas das etapas 1–4:
+
+| Rota | Descrição |
+|---|---|
+| `POST /auth/login` | E-mail + senha → token Bearer (HMAC-SHA256, validade `TOKEN_HORAS`) |
+| `GET /auth/me` · `DELETE /auth/me` | Usuário logado · excluir a própria conta e seus dados (LGPD) |
+| `GET/POST /listas`, `GET/PATCH/DELETE /listas/{id}` | Listas de compras **do usuário logado** (403 para lista de outro usuário) |
+| `POST /listas/{id}/itens`, `PATCH/DELETE /listas/{id}/itens/{item}` | Itens, quantidade e marcar como comprado |
+| `GET /listas/{id}/comparacao` | Total da lista em cada supermercado, melhor opção e economia potencial (com a referência do cálculo) |
+| `GET /produtos?busca=&codigo_barras=&categoria_id=` | Busca por nome/marca, EAN e categoria |
+| `GET /produtos/{id}/historico` | Mínimo, máximo, média e variação, só com registros existentes |
+
+- `POST /precos` com token exige que `usuario_id` seja o do próprio usuário (403).
+- Novos status: **401** (sem token/expirado) e **403** (recurso de outro usuário).
+- Banco: coluna `item_lista.comprado` (já no `schema.sql`; bancos antigos: `scripts/migracoes/001_item_lista_comprado.sql`).
+- `scripts/demo.sql`: preços demonstrativos extras, carregados pelo compose depois do seed (o `seed.sql`
+  dos testes não muda, exceto pelas senhas reais dos usuários demo: `picped123`).
+- CORS configurável por `CORS_ORIGENS` (padrão `*`), para clientes web.

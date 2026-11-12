@@ -19,6 +19,10 @@ class ProdutoService(BaseService):
         if categoria_id is not None and not self.categorias.existe(categoria_id):
             raise BusinessRuleError(f"A categoria {categoria_id} não existe.")
 
+    def listar(self, limit=50, offset=0, busca=None, codigo_barras=None, categoria_id=None):
+        busca = normalizar_texto(busca) if busca else None
+        return self.repo.listar(limit, offset, busca, codigo_barras, categoria_id)
+
     def criar(self, dados):
         self._validar(dados)
         return super().criar(dados)

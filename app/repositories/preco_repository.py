@@ -47,3 +47,16 @@ class PrecoRepository(BaseRepository[Preco]):
             """
         )
         return [dict(r._mapping) for r in self.conn.execute(sql, {"produto_id": produto_id})]
+
+    def historico(self, produto_id: int) -> list[dict]:
+        """Todos os preços registrados do produto (mais antigos primeiro), com o nome do mercado."""
+        sql = text(
+            """
+            SELECT pr.valor, pr.coletado_em, s.id AS supermercado_id, s.nome AS supermercado_nome
+            FROM preco pr
+            JOIN supermercado s ON s.id = pr.supermercado_id
+            WHERE pr.produto_id = :produto_id
+            ORDER BY pr.coletado_em, pr.id
+            """
+        )
+        return [dict(r._mapping) for r in self.conn.execute(sql, {"produto_id": produto_id})]

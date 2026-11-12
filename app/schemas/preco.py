@@ -113,3 +113,21 @@ class ComparacaoOut(BaseModel):
     economia: float
     economia_percentual: float
     ofertas: list[OfertaOut]
+
+
+class PontoHistoricoOut(BaseModel):
+    valor: float
+    coletado_em: datetime
+    supermercado_id: int
+    supermercado_nome: str
+
+
+class HistoricoOut(BaseModel):
+    produto_id: int
+    produto_nome: str
+    registros: int
+    minimo: Optional[float]
+    maximo: Optional[float]
+    media: Optional[float]
+    variacao_percentual: Optional[float] = Field(description="Do primeiro para o último registro.")
+    pontos: list[PontoHistoricoOut]
