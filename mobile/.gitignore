@@ -46,3 +46,22 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# ---- Picped: artefatos de build e segredos (nunca versionar) ----
+build/
+**/build/
+.gradle/
+**/.gradle/
+*.apk
+*.aab
+*.ipa
+local.properties
+**/local.properties
+.idea/
+# assinatura / segredos
+key.properties
+**/key.properties
+*.jks
+*.keystore
+.env
+*.env

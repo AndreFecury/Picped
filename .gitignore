@@ -9,3 +9,7 @@ venv/
 report.xml
 *.apk
 subir-picped.log
+
+# builds
+build/
+**/build/
