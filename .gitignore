@@ -7,3 +7,5 @@ venv/
 *.zip
 .cache/
 report.xml
+*.apk
+subir-picped.log

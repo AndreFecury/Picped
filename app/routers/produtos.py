@@ -1,9 +1,11 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.dependencies import get_preco_service, get_produto_service
 from app.schemas.base import IdPath
 from app.schemas.erro import respostas
-from app.schemas.preco import ComparacaoOut
+from app.schemas.preco import ComparacaoOut, HistoricoOut
 from app.schemas.produto import ProdutoCreate, ProdutoOut, ProdutoUpdate
 from app.services.preco_service import PrecoService
 from app.services.produto_service import ProdutoService
@@ -13,11 +15,14 @@ router = APIRouter(prefix="/produtos", tags=["Produtos"], responses=respostas(42
 
 @router.get("", response_model=list[ProdutoOut], summary="Listar produtos")
 def listar(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    busca: Optional[str] = Query(None, min_length=2, max_length=60, description="Parte do nome ou da marca."),
+    codigo_barras: Optional[str] = Query(None, pattern=r"^[0-9]{8,14}$", description="EAN lido pela câmera."),
+    categoria_id: Optional[int] = Query(None, gt=0),
+    limit: int = Query(50, ge=1, le=200, description="Máximo de registros."),
+    offset: int = Query(0, ge=0, description="Quantos registros pular (paginação)."),
     service: ProdutoService = Depends(get_produto_service),
 ):
-    return service.listar(limit, offset)
+    return service.listar(limit, offset, busca, codigo_barras, categoria_id)
 
 
 @router.post(
@@ -60,6 +65,17 @@ def substituir(
     service: ProdutoService = Depends(get_produto_service),
 ):
     return service.substituir(produto_id, payload.model_dump())
+
+
+@router.get(
+    "/{produto_id}/historico",
+    response_model=HistoricoOut,
+    summary="Histórico de preços do produto",
+    responses=respostas(404, 422),
+)
+def historico(produto_id: IdPath, service: PrecoService = Depends(get_preco_service)):
+    """Mínimo, máximo, média e variação calculados apenas com os registros existentes."""
+    return service.historico(produto_id)
 
 
 @router.patch(

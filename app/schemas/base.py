@@ -31,3 +31,7 @@ class UpdateSchema(EntradaSchema):
         if nulos:
             raise ValueError(f"Os campos {', '.join(nulos)} não podem ser nulos.")
         return self
+
+
+# Nome usado pelos schemas de autenticação e listas (POST).
+CreateSchema = EntradaSchema

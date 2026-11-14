@@ -24,6 +24,7 @@ services:
       # executados só na 1ª inicialização (volume vazio), em ordem alfabética
       - ./scripts/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./scripts/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./scripts/demo.sql:/docker-entrypoint-initdb.d/03-demo.sql:ro   # dados extras do app (demonstrativos)
     networks:
       - backend                                          # banco só é acessível pela rede interna
     healthcheck:

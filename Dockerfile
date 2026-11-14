@@ -52,6 +52,8 @@ RUN groupadd --system --gid 10001 picped \
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=picped:picped app ./app
+# versão web do app (servida em /app/)
+COPY --chown=picped:picped web_app ./web_app
 
 USER picped
 

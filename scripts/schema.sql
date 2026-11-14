@@ -99,6 +99,7 @@ CREATE TABLE item_lista (
     lista_id    INTEGER        NOT NULL REFERENCES lista_compras (id) ON DELETE CASCADE,
     produto_id  INTEGER        NOT NULL REFERENCES produto (id),
     quantidade  NUMERIC(8,3)   NOT NULL DEFAULT 1,
+    comprado    BOOLEAN        NOT NULL DEFAULT FALSE,
     CONSTRAINT ck_item_quantidade CHECK (quantidade > 0),
     CONSTRAINT uq_item_lista_produto UNIQUE (lista_id, produto_id)
 );

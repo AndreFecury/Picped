@@ -24,6 +24,16 @@ class BadRequestError(AppError):
     codigo = "requisicao_invalida"
 
 
+class UnauthorizedError(AppError):
+    status_code = 401
+    codigo = "nao_autenticado"
+
+
+class ForbiddenError(AppError):
+    status_code = 403
+    codigo = "acesso_negado"
+
+
 class NotFoundError(AppError):
     status_code = 404
     codigo = "nao_encontrado"
@@ -62,7 +72,10 @@ def _resposta(status: int, codigo: str, mensagem: str, detalhes: list | None = N
 def registrar_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError):
-        return _resposta(exc.status_code, exc.codigo, exc.mensagem)
+        resposta = _resposta(exc.status_code, exc.codigo, exc.mensagem)
+        if exc.status_code == 401:
+            resposta.headers["WWW-Authenticate"] = "Bearer"
+        return resposta
 
     @app.exception_handler(RequestValidationError)
     async def _validacao(_: Request, exc: RequestValidationError):

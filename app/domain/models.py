@@ -52,3 +52,20 @@ class Preco:
     valor: Decimal
     coletado_em: datetime
     distancia_metros: Optional[int]
+
+
+@dataclass
+class ListaCompras:
+    id: int
+    usuario_id: int
+    nome: str
+    criada_em: datetime
+
+
+@dataclass
+class ItemLista:
+    id: int
+    lista_id: int
+    produto_id: int
+    quantidade: Decimal
+    comprado: bool

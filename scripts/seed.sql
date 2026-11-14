@@ -1,12 +1,13 @@
 -- =====================================================================
--- Picped - seed.sql  (dados iniciais de teste)
+-- Picped - seed.sql  (DADOS DEMONSTRATIVOS - fictícios, não são preços reais)
+-- Usuários de demonstração: ana@ / bruno@ / carla@picped.dev  — senha: picped123
 -- ATENÇÃO: coordenadas aproximadas/ilustrativas. Ajuste com o Google Maps.
 -- =====================================================================
 
 INSERT INTO usuario (nome, email, senha_hash) VALUES
-    ('Ana Teste',   'ana@picped.dev',   '$2b$12$hashfake0000000000000000000000000000000000000000000a'),
-    ('Bruno Teste', 'bruno@picped.dev', '$2b$12$hashfake0000000000000000000000000000000000000000000b'),
-    ('Carla Teste', 'carla@picped.dev', '$2b$12$hashfake0000000000000000000000000000000000000000000c');
+    ('Ana Teste',   'ana@picped.dev',   'pbkdf2_sha256$600000$6fdac514a89d2dda918c89d8be4b11f6$327adf6c5654a6239a1f5d177ed54b653af9f0ae7793d786295fb421890b5564'),
+    ('Bruno Teste', 'bruno@picped.dev', 'pbkdf2_sha256$600000$920897d2d3cfec2e78e5c2e3022cfad3$ebb1873c44d79e887b268a9ebfb1cc9c11070b0bee2e08caf60ba60b3c52a592'),
+    ('Carla Teste', 'carla@picped.dev', 'pbkdf2_sha256$600000$cb44c98e9233c1499ddeacc1e2ef986e$21878aa4e48a82029cfdcf0b78a2bc85d99c4437dc24028d3e71a618f76da068');
 
 INSERT INTO categoria (nome) VALUES
     ('Grãos e Cereais'), ('Laticínios'), ('Bebidas'), ('Carnes e Ovos'),

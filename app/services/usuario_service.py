@@ -55,3 +55,8 @@ class UsuarioService(BaseService):
         if dados:
             self.obter(id_)
         return super().atualizar(id_, self._preparar(dados, id_))
+
+    def excluir_conta(self, id_: int) -> None:
+        """Direito de exclusão (LGPD): remove os preços do usuário e depois a conta (listas caem em cascata)."""
+        self.obter(id_)
+        self.repo.excluir_com_dados(id_)

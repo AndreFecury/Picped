@@ -87,3 +87,27 @@ class PrecoService(BaseService):
             "economia_percentual": percentual,
             "ofertas": ofertas,
         }
+
+    def historico(self, produto_id: int) -> dict:
+        """Estatísticas calculadas somente com os registros existentes (nada é estimado)."""
+        produto = self.produtos.buscar_por_id(produto_id)
+        if produto is None:
+            raise NotFoundError(f"Produto {produto_id} não encontrado(a).")
+        pontos = self.repo.historico(produto_id)
+        valores = [p["valor"] for p in pontos]
+        resumo = {"minimo": None, "maximo": None, "media": None, "variacao_percentual": None}
+        if valores:
+            resumo["minimo"] = min(valores)
+            resumo["maximo"] = max(valores)
+            resumo["media"] = (sum(valores) / len(valores)).quantize(Decimal("0.01"))
+            if len(valores) >= 2 and valores[0] > 0:
+                resumo["variacao_percentual"] = ((valores[-1] - valores[0]) / valores[0] * 100).quantize(
+                    Decimal("0.01")
+                )
+        return {
+            "produto_id": produto.id,
+            "produto_nome": produto.nome,
+            "registros": len(pontos),
+            **resumo,
+            "pontos": pontos,
+        }

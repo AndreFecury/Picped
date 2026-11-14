@@ -2,7 +2,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Response, status
 
-from app.dependencies import get_preco_service
+from app.core.exceptions import ForbiddenError
+from app.dependencies import get_preco_service, get_usuario_opcional
 from app.schemas.base import IdPath
 from app.schemas.erro import respostas
 from app.schemas.preco import PrecoCreate, PrecoOut, PrecoUpdate
@@ -35,7 +36,19 @@ def listar(
     description=_REGRAS,
     responses=respostas(400),
 )
-def criar(payload: PrecoCreate, service: PrecoService = Depends(get_preco_service)):
+def criar(
+    payload: PrecoCreate,
+    usuario=Depends(get_usuario_opcional),
+    service: PrecoService = Depends(get_preco_service),
+):
+    """
+    Com token (app), o `usuario_id` precisa ser o do próprio usuário logado (senão 403).
+
+    Regras de negócio (422 se violadas): produto, supermercado e usuário precisam existir,
+    o supermercado precisa estar ativo e `distancia_metros` não pode passar do raio do mercado.
+    """
+    if usuario is not None and usuario.id != payload.usuario_id:
+        raise ForbiddenError("Você só pode registrar preços em seu próprio nome.")
     return service.criar(payload.model_dump())
 
 

@@ -38,10 +38,15 @@ class BaseService:
         self.obter(id_)  # 404 se não existir
         return self.repo.atualizar(id_, dados)
 
-    def atualizar(self, id_: int, dados: dict[str, Any]):
-        """PATCH: altera só os campos enviados."""
+    @staticmethod
+    def exigir_campos(dados: dict[str, Any]) -> None:
+        """PATCH sem nenhum campo não tem o que atualizar: requisição inválida (400)."""
         if not dados:
             raise BadRequestError("Informe ao menos um campo para atualizar.")
+
+    def atualizar(self, id_: int, dados: dict[str, Any]):
+        """PATCH: altera só os campos enviados."""
+        self.exigir_campos(dados)
         self.obter(id_)  # 404 se não existir
         return self.repo.atualizar(id_, dados)
 
