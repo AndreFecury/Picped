@@ -1,7 +1,7 @@
 <img src="docs/assets/hero.svg" width="100%" alt="Picped: comparador de preços de supermercado. Cena pixelada ao pôr do sol em Manaus com um supermercado, etiquetas de preço e um cliente empurrando o carrinho." />
 
 <p align="center">
-  <a href="https://github.com/AndreFecury/picped/actions/workflows/ci.yml"><img src="https://github.com/AndreFecury/picped/actions/workflows/ci.yml/badge.svg" alt="CI GitHub Actions" /></a>
+  <a href="https://github.com/AndreFecury/Picped/actions/workflows/ci.yml"><img src="https://github.com/AndreFecury/Picped/actions/workflows/ci.yml/badge.svg" alt="CI GitHub Actions" /></a>
   <img src="https://img.shields.io/badge/python-3.12-1D6F86?style=flat-square" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/FastAPI-0.115%2B-16A34A?style=flat-square" alt="FastAPI" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-3B5DC9?style=flat-square" alt="PostgreSQL 16" />
@@ -441,7 +441,7 @@ Dois pipelines rodam o mesmo roteiro a cada push:
 ### Com Docker (recomendado)
 
 ```bash
-git clone https://github.com/AndreFecury/picped.git
+git clone https://github.com/AndreFecury/Picped.git
 cd picped
 cp .env.example .env          # no Windows: copy .env.example .env
 docker compose up -d --build
