@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="https://github.com/AndreFecury/picped/actions/workflows/ci.yml"><img src="https://github.com/AndreFecury/picped/actions/workflows/ci.yml/badge.svg" alt="CI GitHub Actions" /></a>
-  <a href="https://gitlab.com/psicode1/picped/-/pipelines"><img src="https://gitlab.com/psicode1/picped/badges/main/pipeline.svg" alt="Pipeline GitLab" /></a>
   <img src="https://img.shields.io/badge/python-3.12-1D6F86?style=flat-square" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/FastAPI-0.115%2B-16A34A?style=flat-square" alt="FastAPI" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-3B5DC9?style=flat-square" alt="PostgreSQL 16" />
