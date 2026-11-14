@@ -167,3 +167,51 @@ def test_comparacao_sem_precos(client):
 
 def test_comparacao_produto_inexistente_404(client):
     assert_erro(client.get("/produtos/999/comparacao"), 404)
+
+
+# ---------- busca (usada pela tela Pesquisar do app) ----------
+
+
+def test_busca_por_nome_sem_diferenciar_maiusculas(client):
+    resp = client.get("/produtos", params={"busca": "ARROZ"})
+    assert resp.status_code == 200
+    assert [p["nome"] for p in resp.json()] == ["Arroz Branco Tipo 1 5kg"]
+
+
+def test_busca_por_codigo_de_barras(client):
+    criado = client.post("/produtos", json=NOVO).json()
+    resp = client.get("/produtos", params={"codigo_barras": NOVO["codigo_barras"]})
+    assert [p["id"] for p in resp.json()] == [criado["id"]]
+
+
+def test_busca_por_categoria(client):
+    resp = client.get("/produtos", params={"categoria_id": 1})
+    assert resp.status_code == 200
+    assert resp.json() and all(p["categoria_id"] == 1 for p in resp.json())
+
+
+# ---------- histórico de preços ----------
+
+
+def test_historico_calcula_com_registros_reais(client):
+    resp = client.get("/produtos/1/historico")
+    assert resp.status_code == 200
+    h = resp.json()
+    assert h["registros"] == len(h["pontos"]) == 4
+    datas = [p["coletado_em"] for p in h["pontos"]]
+    assert datas == sorted(datas)  # do mais antigo para o mais recente (eixo do gráfico)
+    assert h["minimo"] == pytest.approx(27.90)
+    assert h["maximo"] == pytest.approx(32.90)
+    assert h["media"] == pytest.approx(30.20)
+    assert h["variacao_percentual"] == pytest.approx(2.15)  # 27,90 -> 28,50
+
+
+def test_historico_sem_registros_nao_inventa_valores(client):
+    novo = client.post("/produtos", json=NOVO).json()
+    h = client.get(f"/produtos/{novo['id']}/historico").json()
+    assert h["registros"] == 0 and h["pontos"] == []
+    assert h["minimo"] is None and h["media"] is None and h["variacao_percentual"] is None
+
+
+def test_historico_produto_inexistente_404(client):
+    assert_erro(client.get("/produtos/999/historico"), 404)
