@@ -23,6 +23,8 @@ class Settings:
     secret_key: str
     token_horas: int
     cors_origens: list[str]
+    database_url: str
+    commit: str
 
 
 @lru_cache
@@ -41,4 +43,8 @@ def get_settings() -> Settings:
         secret_key=os.getenv("SECRET_KEY", "picped-dev-troque-esta-chave"),
         token_horas=int(os.getenv("TOKEN_HORAS", "72")),
         cors_origens=[o.strip() for o in os.getenv("CORS_ORIGENS", "*").split(",") if o.strip()],
+        # Em produção (Neon/Render) a conexão vem numa URL só; tem prioridade sobre DB_HOST/DB_NAME/...
+        database_url=os.getenv("DATABASE_URL", ""),
+        # Render preenche RENDER_GIT_COMMIT; o pipeline usa para saber qual versão está no ar
+        commit=(os.getenv("RENDER_GIT_COMMIT") or os.getenv("GIT_COMMIT") or "local")[:7],
     )

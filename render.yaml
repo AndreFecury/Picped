@@ -1,0 +1,27 @@
+# Render Blueprint: API do Picped no plano grátis (banco no Neon, via DATABASE_URL).
+# No Render: New > Blueprint > escolha este repositório. Ele pede o DATABASE_URL na criação.
+services:
+  - type: web
+    name: picped-api
+    runtime: docker
+    plan: free
+    region: virginia            # mesma região do banco no Neon (AWS us-east-1)
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass   # só publica depois que o CI (lint + testes) passar
+    envVars:
+      - key: DATABASE_URL
+        sync: false               # cole a connection string do Neon (com ?sslmode=require)
+      - key: SECRET_KEY
+        generateValue: true       # chave aleatória para assinar os tokens
+      - key: TOKEN_HORAS
+        value: "72"
+      - key: CORS_ORIGENS
+        value: "*"
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_POOL_MAX_OVERFLOW
+        value: "2"
+      - key: DB_CONNECT_TIMEOUT
+        value: "15"               # o Neon grátis dorme; acordar leva alguns segundos

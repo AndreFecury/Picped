@@ -1,21 +1,29 @@
 """Engine do SQLAlchemy com pool de conexões (criado uma vez, reutilizado em todas as requisições)."""
 from sqlalchemy import create_engine
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, make_url
 
 from app.core.config import get_settings
 
 _settings = get_settings()
 
-engine = create_engine(
+
+def _url() -> URL:
+    """DATABASE_URL (ex.: Neon, com ?sslmode=require) ou as variáveis DB_* separadas."""
+    if _settings.database_url:
+        return make_url(_settings.database_url).set(drivername="postgresql+psycopg")
     # URL.create escapa corretamente senhas com caracteres especiais
-    URL.create(
+    return URL.create(
         "postgresql+psycopg",
         username=_settings.db_user,
         password=_settings.db_password,
         host=_settings.db_host,
         port=_settings.db_port,
         database=_settings.db_name,
-    ),
+    )
+
+
+engine = create_engine(
+    _url(),
     pool_size=_settings.pool_size,
     max_overflow=_settings.pool_max_overflow,
     pool_timeout=_settings.pool_timeout,  # espera máxima (s) por uma conexão livre

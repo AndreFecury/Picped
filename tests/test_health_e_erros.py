@@ -5,7 +5,9 @@ from tests.conftest import assert_erro
 def test_health_ok(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok", "banco": "ok"}
+    corpo = resp.json()
+    assert corpo["status"] == "ok" and corpo["banco"] == "ok"
+    assert isinstance(corpo["versao"], str) and corpo["versao"]
 
 
 def test_swagger_disponivel(client):

@@ -52,6 +52,8 @@ RUN groupadd --system --gid 10001 picped \
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=picped:picped app ./app
+# SQL usado pelo app.init_db na primeira subida (banco vazio)
+COPY --chown=picped:picped scripts/schema.sql scripts/seed.sql scripts/demo.sql ./scripts/
 # versão web do app (servida em /app/)
 COPY --chown=picped:picped web_app ./web_app
 
@@ -61,6 +63,8 @@ EXPOSE 8000
 
 # o próprio container informa se a API (e o banco) estão respondendo
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
+  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/health' % os.getenv('PORT','8000'), timeout=4).status == 200 else 1)"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# PORT: o Render define a porta; localmente/compose fica 8000.
+# app.init_db cria as tabelas só se o banco estiver vazio (nunca apaga dados).
+CMD ["sh", "-c", "python -m app.init_db && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

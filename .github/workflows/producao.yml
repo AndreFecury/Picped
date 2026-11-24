@@ -1,0 +1,168 @@
+# Picped em produção (Render + Neon)
+#   1. espera o Render publicar o commit que passou no CI
+#   2. testa cada funcionalidade contra o endereço público (tests_e2e)
+#   3. gera o APK apontando para esse endereço e publica na release "demo"
+#   4. se algo falhar, abre (ou atualiza) uma issue com o erro; quando voltar a passar, fecha
+# Também roda a cada 6 horas como monitor, e manualmente pelo botão "Run workflow".
+# Requer a variável do repositório PICPED_API_URL (Settings > Secrets and variables > Actions > Variables).
+name: Produção
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      gerar_apk:
+        description: Gerar e publicar o APK depois dos testes
+        type: boolean
+        default: true
+
+concurrency:
+  group: producao
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  API_URL: ${{ vars.PICPED_API_URL }}
+
+jobs:
+  aguardar-deploy:
+    name: Espera o Render publicar
+    # sem PICPED_API_URL (Render ainda não criado) o workflow inteiro fica em espera, sem abrir issue
+    if: vars.PICPED_API_URL != '' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Espera a versão nova responder no /health
+        if: github.event_name == 'workflow_run'
+        env:
+          ESPERADA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          alvo="${ESPERADA:0:7}"
+          for i in $(seq 1 60); do
+            v=$(curl -s --max-time 90 "$API_URL/health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('versao',''))" 2>/dev/null || true)
+            echo "tentativa $i: no ar = ${v:-sem resposta}, esperada = $alvo"
+            [ "$v" = "$alvo" ] && exit 0
+            sleep 20
+          done
+          echo "::error::O Render não publicou $alvo em 20 minutos. Veja os logs do deploy no painel do Render."
+          exit 1
+
+  e2e:
+    name: Testa cada funcionalidade em produção
+    needs: aguardar-deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest httpx
+      - name: E2E contra ${{ env.API_URL }}
+        env:
+          E2E_BASE_URL: ${{ env.API_URL }}
+        run: pytest tests_e2e -v --junitxml=report-e2e.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-producao
+          path: report-e2e.xml
+
+  apk:
+    name: Gera o APK da demonstração
+    needs: e2e
+    if: github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && inputs.gerar_apk)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build (API em ${{ env.API_URL }})
+        working-directory: mobile
+        run: |
+          flutter --version
+          flutter pub get
+          flutter test
+          flutter build apk --release --dart-define=API_URL=$API_URL
+          cp build/app/outputs/flutter-apk/app-release.apk ../Picped-demo.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Picped-demo-apk
+          path: Picped-demo.apk
+      - name: Publica na release "demo"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          nota="APK de demonstração apontando para $API_URL. Gerado em $(date -u +'%d/%m/%Y %H:%M UTC') pelo commit ${GITHUB_SHA::7}, depois que todos os testes de produção passaram."
+          if gh release view demo >/dev/null 2>&1; then
+            gh release edit demo --notes "$nota"
+          else
+            gh release create demo --title "Picped · demonstração" --notes "$nota" --prerelease
+          fi
+          gh release upload demo Picped-demo.apk --clobber
+
+  registrar:
+    name: Registra o resultado
+    needs: [aguardar-deploy, e2e]
+    if: always() && needs.aguardar-deploy.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: e2e-producao
+      - uses: actions/github-script@v7
+        env:
+          DEPLOY: ${{ needs.aguardar-deploy.result }}
+          E2E: ${{ needs.e2e.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const ok = process.env.DEPLOY === 'success' && process.env.E2E === 'success';
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const titulo = 'Produção com falha (detectado pelo pipeline)';
+            const { data: abertas } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'falha-producao' });
+            const issue = abertas.find(i => i.title === titulo);
+            if (ok) {
+              if (issue) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number,
+                  body: `Voltou a passar em ${run}. Fechando. Se a correção não veio com um teste de regressão, adicione um antes de seguir.` });
+                await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed' });
+              }
+              return;
+            }
+            // monta a lista de testes que falharam a partir do relatório JUnit
+            let falhas = [];
+            try {
+              const xml = fs.readFileSync('report-e2e.xml', 'utf8');
+              const re = /<testcase[^>]*name="([^"]+)"[^>]*>\s*<(failure|error)[^>]*message="([^"]*)"/g;
+              let m; while ((m = re.exec(xml))) falhas.push(`- \`${m[1]}\`: ${m[3].replace(/&quot;/g, '"').slice(0, 300)}`);
+            } catch (e) { /* sem relatório: falhou antes dos testes */ }
+            const etapa = process.env.DEPLOY !== 'success' ? 'Deploy (a versão nova não respondeu no /health)' : 'Testes E2E em produção';
+            const corpo = [
+              `**Etapa:** ${etapa}`, `**Execução:** ${run}`, `**Quando:** ${new Date().toISOString()}`, '',
+              falhas.length ? '**Testes que falharam:**\n' + falhas.join('\n') : '_Sem relatório de testes: veja o log da execução._', '',
+              '**Para fechar o ciclo de aprendizado:**',
+              '- [ ] reproduzir localmente (`E2E_BASE_URL=... pytest tests_e2e -k <teste>`)',
+              '- [ ] corrigir e incluir um teste de regressão em `tests/` ou `tests_e2e/`',
+              '- [ ] registrar a causa e a correção em `docs/licoes-aprendidas.md`',
+            ].join('\n');
+            try { await github.rest.issues.createLabel({ ...context.repo, name: 'falha-producao', color: 'd73a4a' }); } catch (e) {}
+            if (issue) await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: corpo });
+            else await github.rest.issues.create({ ...context.repo, title: titulo, body: corpo, labels: ['falha-producao'] });
+            core.setFailed('Produção com falha: issue registrada.');

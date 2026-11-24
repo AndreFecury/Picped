@@ -1,0 +1,27 @@
+# Mantém a API acordada durante a apresentação (o plano grátis do Render dorme após 15 min sem uso).
+# Actions > "Manter acordado" > Run workflow, cerca de 10 minutos antes de apresentar.
+name: Manter acordado
+
+on:
+  workflow_dispatch:
+    inputs:
+      horas:
+        description: Por quantas horas manter a API acordada (máximo 5)
+        default: "3"
+
+jobs:
+  acordar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 310
+    steps:
+      - name: Chama o /health a cada 10 minutos
+        env:
+          API_URL: ${{ vars.PICPED_API_URL }}
+          HORAS: ${{ inputs.horas }}
+        run: |
+          h=$(( HORAS > 5 ? 5 : HORAS ))
+          fim=$(( $(date +%s) + h * 3600 ))
+          while [ "$(date +%s)" -lt "$fim" ]; do
+            curl -s --max-time 90 -o /dev/null -w "%{http_code} em %{time_total}s\n" "$API_URL/health" || true
+            sleep 600
+          done

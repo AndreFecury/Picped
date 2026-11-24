@@ -438,6 +438,12 @@ Dois pipelines rodam o mesmo roteiro a cada push:
 
 ## <img src="docs/assets/ic-rodar.svg" height="32" align="absmiddle" alt="" /> Como rodar
 
+### Online (demonstração)
+
+A API roda no Render e o banco no Neon, os dois no plano grátis, e o pipeline gera o APK já
+apontando para lá. Passo a passo em [`docs/DEPLOY.md`](docs/DEPLOY.md). O APK fica em
+**Releases › demo**.
+
 ### Com Docker (recomendado)
 
 ```bash

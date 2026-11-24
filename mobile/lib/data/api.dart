@@ -18,10 +18,15 @@ class ApiException implements Exception {
 
 // ---------------- configuração ----------------
 
+/// Endereço da API no APK de demonstração, definido no build do pipeline:
+///   flutter build apk --dart-define=API_URL=https://picped-api.onrender.com
+const _urlDoBuild = String.fromEnvironment('API_URL');
+
 /// Endereço padrão da API:
 /// - versão web (servida pela própria API em /app): o mesmo endereço da página;
-/// - Android: 10.0.2.2 é o "localhost" do PC visto de dentro do emulador.
-String get urlPadrao => kIsWeb ? Uri.base.origin : 'http://10.0.2.2:8000';
+/// - APK do pipeline: o endereço público (API_URL);
+/// - desenvolvimento: 10.0.2.2 é o "localhost" do PC visto de dentro do emulador.
+String get urlPadrao => kIsWeb ? Uri.base.origin : (_urlDoBuild.isNotEmpty ? _urlDoBuild : 'http://10.0.2.2:8000');
 const _chaveUrl = 'api_url';
 const _chaveToken = 'token';
 
@@ -73,8 +78,9 @@ class PicpedApi {
   PicpedApi(String baseUrl, this.tokens)
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 15),
+          // o servidor grátis dorme sem uso e leva ~1 min para acordar na primeira chamada
+          connectTimeout: const Duration(seconds: 75),
+          receiveTimeout: const Duration(seconds: 75),
           contentType: 'application/json',
         )) {
     _dio.interceptors.add(InterceptorsWrapper(onRequest: (o, h) async {

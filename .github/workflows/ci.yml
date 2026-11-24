@@ -62,11 +62,29 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - run: pytest -v --junitxml=report.xml
+      # E2E local: sobe a API de verdade (como no Render) e testa cada funcionalidade por HTTP
+      - name: Prepara banco limpo para o E2E
+        run: |
+          python -c "import psycopg; c=psycopg.connect(host='localhost', user='postgres', password='picped', dbname='picped_test', autocommit=True); c.execute('CREATE DATABASE picped_e2e')"
+          python -m app.init_db
+        env:
+          DATABASE_URL: postgresql://postgres:picped@localhost:5432/picped_e2e
+      - name: Sobe a API e roda o E2E
+        env:
+          DATABASE_URL: postgresql://postgres:picped@localhost:5432/picped_e2e
+          GIT_COMMIT: ${{ github.sha }}
+        run: |
+          uvicorn app.main:app --port 8000 > uvicorn.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break; sleep 1; done
+          pytest tests_e2e -v --junitxml=report-e2e.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: relatorio-testes
-          path: report.xml
+          path: |
+            report.xml
+            report-e2e.xml
+            uvicorn.log
 
   build:
     name: Build Docker (não-root)
